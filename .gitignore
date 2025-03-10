@@ -1,1 +1,3 @@
-./kube-registry-bouncer
+kube-registry-bouncer
+tls.key
+tls.crt

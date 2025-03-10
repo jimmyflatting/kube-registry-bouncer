@@ -84,6 +84,25 @@ helm install registry-bouncer ./helm
 # Or if using a repository
 helm install registry-bouncer jimmyflatting/kube-registry-bouncer
 ```
+### Helm chart config
+
+| Parameter                | Description                                | Default                  |
+|--------------------------|--------------------------------------------|--------------------------|
+| replicaCount             | Number of replicas                         | 1                        |
+| image.repository         | Image repository                           | kube-registry-bouncer    |
+| image.tag                | Image tag                                  | latest                   |
+| image.pullPolicy         | Image pull policy                          | Always                   |
+| config.debug             | Enable debug mode                          | true                     |
+| config.registryWhitelist | Comma-separated list of allowed registries | ghcr.io                  |
+| config.port              | Container port                             | 1323                     |
+| tls.autoGenerate         | Auto-generate certificates with cert-manager | true                   |
+| tls.existingSecret       | Use existing TLS secret                    | ""                       |
+| webhook.failurePolicy    | Webhook failure policy                     | Fail                     |
+| webhook.timeoutSeconds   | Webhook timeout in seconds                 | 5                        |
+| webhook.excludeNamespaces| Namespaces to exclude from validation      | ["kube-system"]          |
+| service.type             | Service type                               | ClusterIP                |
+| service.port             | Service port                               | 443                      |
+| resources                | CPU/Memory resource requests/limits        | See values.yaml          |
 
 ### Examples
 Custom configuration:

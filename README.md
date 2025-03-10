@@ -62,6 +62,43 @@ CA_BUNDLE=$(cat tls.crt | base64 | tr -d '\n')
 sed "s|\${CA_BUNDLE}|${CA_BUNDLE}|g" kubernetes/webhook.yaml | kubectl apply -f -
 ```
 
+## Installing with Helm
+
+### Prerequisites
+- Kubernetes 1.19+
+- Helm 3.2.0+
+- [Optional] cert-manager v1.0.0+ (for automated TLS certificate management)
+
+### Installing the Chart
+
+To install the chart with the release name `registry-bouncer`:
+
+```bash
+# Add the Helm repository (if hosted in a repository)
+helm repo add jimmyflatting https://jimmyflatting.github.io/charts
+helm repo update
+
+# Install the chart from the local directory
+helm install registry-bouncer ./helm
+
+# Or if using a repository
+helm install registry-bouncer jimmyflatting/kube-registry-bouncer
+```
+
+### Examples
+Custom configuration:
+```bash
+helm install registry-bouncer ./helm \
+  --set config.registryWhitelist=ghcr.io,docker.io \
+  --set webhook.excludeNamespaces="{kube-system,cert-manager,monitoring}"
+```
+Using existing certificates:
+```bash
+helm install registry-bouncer ./helm \
+  --set tls.autoGenerate=false \
+  --set tls.existingSecret=my-tls-secret
+```
+
 ### Configuration
 #### Registry Whitelist
 Configure the allowed registries by setting the `KUBE_BOUNCER_REGISTRY_WHITELIST` environment variable in the deployment:

@@ -1,0 +1,17 @@
+apiVersion: v2
+name: kube-registry-bouncer
+description: A Kubernetes admission controller webhook that validates image registries
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - kubernetes
+  - admission
+  - security
+  - registry
+  - validation
+home: https://github.com/jimmyflatting/kube-registry-bouncer
+sources:
+  - https://github.com/jimmyflatting/kube-registry-bouncer
+maintainers:
+  - name: Jimmy Flatting

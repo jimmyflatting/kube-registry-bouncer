@@ -1,0 +1,30 @@
+{{- if .Values.tls.autoGenerate }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "kube-registry-bouncer.fullname" . }}-certs
+  labels:
+    {{- include "kube-registry-bouncer.labels" . | nindent 4 }}
+spec:
+  secretName: {{ include "kube-registry-bouncer.fullname" . }}-certs
+  duration: 8760h # 1 year
+  renewBefore: 720h # 30 days
+  subject:
+    organizations:
+      - kube-registry-bouncer
+  isCA: false
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS1
+    size: 2048
+  usages:
+    - server auth
+  dnsNames:
+    - {{ include "kube-registry-bouncer.fullname" . }}
+    - {{ include "kube-registry-bouncer.fullname" . }}.{{ .Release.Namespace }}
+    - {{ include "kube-registry-bouncer.fullname" . }}.{{ .Release.Namespace }}.svc
+    - {{ include "kube-registry-bouncer.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+  issuerRef:
+    name: {{ .Values.tls.issuerName | default "selfsigned-issuer" }}
+    kind: {{ .Values.tls.issuerKind | default "ClusterIssuer" }}
+{{- end }}

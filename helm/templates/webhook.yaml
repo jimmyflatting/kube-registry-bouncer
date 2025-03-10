@@ -1,0 +1,41 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: {{ include "kube-registry-bouncer.fullname" . }}
+  labels:
+    {{- include "kube-registry-bouncer.labels" . | nindent 4 }}
+  {{- if .Values.tls.autoGenerate }}
+  annotations:
+    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "kube-registry-bouncer.fullname" . }}-certs
+  {{- end }}
+webhooks:
+  - name: {{ include "kube-registry-bouncer.fullname" . }}.{{ .Release.Namespace }}.svc
+    clientConfig:
+      service:
+        name: {{ include "kube-registry-bouncer.fullname" . }}
+        namespace: {{ .Release.Namespace }}
+        path: "/validate-registry"
+        port: {{ .Values.service.port }}
+      {{- if not .Values.tls.autoGenerate }}
+      caBundle: ${CA_BUNDLE}
+      {{- end }}
+    rules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+        scope: "Namespaced"
+    namespaceSelector:
+      matchExpressions:
+        {{- range .Values.webhook.excludeNamespaces }}
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["{{ . }}"]
+        {{- end }}
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["{{ .Release.Namespace }}"]
+    failurePolicy: {{ .Values.webhook.failurePolicy }}
+    sideEffects: None
+    admissionReviewVersions: ["v1"]
+    timeoutSeconds: {{ .Values.webhook.timeoutSeconds }}

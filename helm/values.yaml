@@ -1,0 +1,114 @@
+# Default values for kube-registry-bouncer.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# This will set the replicaset count 
+replicaCount: 1
+
+# Container image information
+image:
+  repository: ghcr.io/jimmyflatting/kube-registry-bouncer
+  pullPolicy: Always
+  # Overrides the image tag, default is the chart appVersion
+  tag: "latest"
+
+# Registry whitelist configuration
+config:
+  debug: true
+  # Comma-separated list of allowed registries
+  registryWhitelist: "ghcr.io"
+  # Port to expose in the container
+  port: 1323
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# Service account configuration
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 443
+  targetPort: 1323
+
+# TLS certificates for the webhook
+tls:
+  # If true, auto-generates certificates
+  autoGenerate: true
+  # If using existing certs, provide secret name
+  existingSecret: ""
+
+# Webhook configuration
+webhook:
+  failurePolicy: Fail
+  timeoutSeconds: 5
+  # Namespaces to exclude from validation
+  excludeNamespaces:
+    - kube-system
+
+# This block is for setting up the ingress
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts: []
+  tls: []
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+# Health probe configuration
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 1323
+  initialDelaySeconds: 5
+  periodSeconds: 10
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: 1323
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

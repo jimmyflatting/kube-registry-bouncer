@@ -1,0 +1,23 @@
+Thank you for installing {{ .Chart.Name }}.
+
+Your release is named {{ .Release.Name }}.
+
+The webhook is configured to validate image registries against the following whitelist:
+{{ .Values.config.registryWhitelist }}
+
+To test the webhook, you can use:
+
+1. Test an allowed registry:
+   kubectl apply -f https://raw.githubusercontent.com/jimmyflatting/kube-registry-bouncer/main/kubernetes/tests/deployment-success.yaml
+
+2. Test a blocked registry:
+   kubectl apply -f https://raw.githubusercontent.com/jimmyflatting/kube-registry-bouncer/main/kubernetes/tests/deployment-fail.yaml
+
+To view logs from the webhook:
+   kubectl logs -l app.kubernetes.io/name={{ include "kube-registry-bouncer.name" . }},app.kubernetes.io/instance={{ .Release.Name }} -n {{ .Release.Namespace }}
+
+{{ if .Values.tls.autoGenerate -}}
+NOTE: This chart uses cert-manager for certificate generation. Make sure cert-manager is installed in your cluster.
+{{- end }}
+
+For more information, visit: https://github.com/jimmyflatting/kube-registry-bouncer

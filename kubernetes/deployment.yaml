@@ -1,0 +1,37 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-registry-bouncer-server
+  namespace: kubebouncer-poc
+  labels:
+    app: kube-registry-bouncer-bouncer-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kube-registry-bouncer-server
+  template:
+    metadata:
+      labels:
+        app: kube-registry-bouncer-server
+    spec:
+      containers:
+      - name: kube-registry-bouncer
+        imagePullPolicy: Always
+        image: ghcr.io/jimmyflatting/kube-registry-bouncer:latest
+        env:
+        - name: KUBE_BOUNCER_REGISTRY_WHITELIST
+          value: "ghcr.io,docker.io" # Can be `comma` seperate values
+        ports:
+        - containerPort: 1323
+          name: kube-registry-bouncer-api
+        volumeMounts:
+        - name: kube-registry-bouncer-tls-certs
+          mountPath: /etc/kube-registry-bouncer/certs
+          readOnly: true
+
+      volumes:
+      - name: kube-registry-bouncer-tls-certs
+        secret:
+          secretName: kube-registry-bouncer-tls-secret

@@ -1,0 +1,12 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kube-registry-bouncer-server
+  namespace: kube-registry-bouncer-poc
+spec:
+  selector:
+    app: kube-registry-bouncer-server
+  ports:
+  - port: 443
+    targetPort: kube-registry-bouncer-api

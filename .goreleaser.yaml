@@ -12,7 +12,7 @@ builds:
   - arm64
 
 dockers:
-- image_templates: ["ghcr.io/jimmyflatting/{{ .ProjectName }}:{{ .Version }}-amd64"]
+- image_templates: ["ghcr.io/jimmyflatting/kube-registry-bouncer:{{ .Version }}-amd64"]
   use: buildx
   dockerfile: Dockerfile
   build_flag_templates:
@@ -21,7 +21,7 @@ dockers:
   - "--label=org.opencontainers.image.title={{ .ProjectName }}"
   - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
   - "--label=org.opencontainers.image.version={{ .Version }}"
-- image_templates: ["ghcr.io/jimmyflatting/{{ .ProjectName }}:{{ .Version }}-arm64v8"]
+- image_templates: ["ghcr.io/jimmyflatting/kube-registry-bouncer:{{ .Version }}-arm64v8"]
   use: buildx
   dockerfile: Dockerfile
   goarch: arm64
@@ -33,11 +33,11 @@ dockers:
   - "--label=org.opencontainers.image.version={{ .Version }}"
 
 docker_manifests:
-- name_template: ghcr.io/jimmyflatting/{{ .ProjectName }}:{{ .Version }}
+- name_template: ghcr.io/jimmyflatting/kube-registry-bouncer:{{ .Version }}
   image_templates:
-  - ghcr.io/jimmyflatting/{{ .ProjectName }}:{{ .Version }}-amd64
-  - ghcr.io/jimmyflatting/{{ .ProjectName }}:{{ .Version }}-arm64v8
-- name_template: ghcr.io/jimmyflatting/{{ .ProjectName }}:latest
+  - ghcr.io/jimmyflatting/kube-registry-bouncer:{{ .Version }}-amd64
+  - ghcr.io/jimmyflatting/kube-registry-bouncer:{{ .Version }}-arm64v8
+- name_template: ghcr.io/jimmyflatting/kube-registry-bouncer:latest
   image_templates:
-  - ghcr.io/jimmyflatting/{{ .ProjectName }}:{{ .Version }}-amd64
-  - ghcr.io/jimmyflatting/{{ .ProjectName }}:{{ .Version }}-arm64v8
+  - ghcr.io/jimmyflatting/kube-registry-bouncer:{{ .Version }}-amd64
+  - ghcr.io/jimmyflatting/kube-registry-bouncer:{{ .Version }}-arm64v8

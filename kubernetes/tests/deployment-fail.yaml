@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-blocked-registry
+  namespace: default
+  labels:
+    app: test-blocked-registry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-blocked-registry
+  template:
+    metadata:
+      labels:
+        app: test-blocked-registry
+    spec:
+      containers:
+      - name: nginx
+        image: docker.io/nginx:latest
+        ports:
+        - containerPort: 80

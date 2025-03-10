@@ -9,7 +9,7 @@ metadata:
   name: kube-registry-bouncer-server
   namespace: kube-registry-bouncer-poc
   labels:
-    app: kube-registry-bouncer-bouncer-server
+    app: kube-registry-bouncer-server
 spec:
   replicas: 1
   selector:
@@ -26,7 +26,13 @@ spec:
         image: ghcr.io/jimmyflatting/kube-registry-bouncer:latest
         env:
         - name: KUBE_BOUNCER_REGISTRY_WHITELIST
-          value: "ghcr.io" # Can be `comma` seperate values
+          value: "ghcr.io" # Can be `comma` separated values
+        - name: KUBE_BOUNCER_CERTIFICATE
+          value: "/etc/kube-registry-bouncer/certs/tls.crt"
+        - name: KUBE_BOUNCER_KEY
+          value: "/etc/kube-registry-bouncer/certs/tls.key"
+        - name: KUBE_BOUNCER_DEBUG
+          value: "true"
         ports:
         - containerPort: 1323
           name: krb-api
@@ -34,8 +40,11 @@ spec:
         - name: kube-registry-bouncer-tls-certs
           mountPath: /etc/kube-registry-bouncer/certs
           readOnly: true
-
+        - name: kube-registry-bouncer-logs
+          mountPath: /var/log/kube-registry-bouncer
       volumes:
       - name: kube-registry-bouncer-tls-certs
         secret:
           secretName: kube-registry-bouncer-tls-secret
+      - name: kube-registry-bouncer-logs
+        emptyDir: {}

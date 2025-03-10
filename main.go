@@ -15,6 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
+	"github.com/google/uuid"
 	admissionv1 "k8s.io/api/admission/v1"
 )
 
@@ -26,31 +27,50 @@ type WebhookServer struct {
 
 func (ws *WebhookServer) admitPod(pod *corev1.Pod) (bool, string) {
 	if len(RegistryWhitelist) == 0 {
+		log.Printf("WARN: No registry whitelist configured, allowing all registries for pod %s/%s", pod.Namespace, pod.Name)
 		return true, ""
 	}
 
 	for _, container := range pod.Spec.Containers {
 		allowed := false
+		registryFound := ""
+
 		for _, registry := range RegistryWhitelist {
 			if strings.HasPrefix(container.Image, registry) {
 				allowed = true
+				registryFound = registry
 				break
 			}
 		}
-		if !allowed {
+
+		if allowed {
+			log.Printf("INFO: Container '%s' image '%s' is allowed (matches registry: %s)",
+				container.Name, container.Image, registryFound)
+		} else {
+			log.Printf("WARN: Container '%s' image '%s' is not from an allowed registry. Allowed: %v",
+				container.Name, container.Image, RegistryWhitelist)
 			return false, fmt.Sprintf("container image %s is not from an allowed registry", container.Image)
 		}
 	}
 
 	for _, container := range pod.Spec.InitContainers {
 		allowed := false
+		registryFound := ""
+
 		for _, registry := range RegistryWhitelist {
 			if strings.HasPrefix(container.Image, registry) {
 				allowed = true
+				registryFound = registry
 				break
 			}
 		}
-		if !allowed {
+
+		if allowed {
+			log.Printf("INFO: Init container '%s' image '%s' is allowed (matches registry: %s)",
+				container.Name, container.Image, registryFound)
+		} else {
+			log.Printf("WARN: Init container '%s' image '%s' is not from an allowed registry. Allowed: %v",
+				container.Name, container.Image, RegistryWhitelist)
 			return false, fmt.Sprintf("init container image %s is not from an allowed registry", container.Image)
 		}
 	}
@@ -59,39 +79,68 @@ func (ws *WebhookServer) admitPod(pod *corev1.Pod) (bool, string) {
 }
 
 func (ws *WebhookServer) Handle(w http.ResponseWriter, r *http.Request) {
+	// Add request ID for tracking
+	requestID := uuid.New().String()[:8]
+	log.Printf("[%s] Received admission review request", requestID)
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
+		log.Printf("[%s] ERROR: Could not read request body: %v", requestID, err)
 		http.Error(w, fmt.Sprintf("Could not read request body: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	if len(body) == 0 {
+		log.Printf("[%s] ERROR: Empty body received", requestID)
 		http.Error(w, "empty body", http.StatusBadRequest)
 		return
 	}
 
 	admissionReview := admissionv1.AdmissionReview{}
 	if err := json.Unmarshal(body, &admissionReview); err != nil {
+		log.Printf("[%s] ERROR: Could not parse admission review: %v", requestID, err)
 		http.Error(w, fmt.Sprintf("Could not parse admission review: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	if admissionReview.Request == nil {
+		log.Printf("[%s] ERROR: Invalid admission review request, no Request field", requestID)
 		http.Error(w, "Invalid admission review request", http.StatusBadRequest)
 		return
 	}
+
+	log.Printf("[%s] Processing request for %s: %s/%s",
+		requestID,
+		admissionReview.Request.Kind.Kind,
+		admissionReview.Request.Namespace,
+		admissionReview.Request.Name)
 
 	var admissionResponse *admissionv1.AdmissionResponse
 
 	if admissionReview.Request.Kind.Kind == "Pod" {
 		var pod corev1.Pod
 		if err := json.Unmarshal(admissionReview.Request.Object.Raw, &pod); err != nil {
+			log.Printf("[%s] ERROR: Could not unmarshal Pod object: %v", requestID, err)
 			admissionResponse = &admissionv1.AdmissionResponse{
 				Result: &metav1.Status{
 					Message: fmt.Sprintf("Could not unmarshal Pod object: %v", err),
 				},
 			}
 		} else {
+			log.Printf("[%s] Validating Pod '%s/%s' with %d containers",
+				requestID,
+				pod.Namespace,
+				pod.Name,
+				len(pod.Spec.Containers))
+
+			// Log container images
+			for _, container := range pod.Spec.Containers {
+				log.Printf("[%s]   - Container '%s' using image: %s", requestID, container.Name, container.Image)
+			}
+			for _, container := range pod.Spec.InitContainers {
+				log.Printf("[%s]   - Init container '%s' using image: %s", requestID, container.Name, container.Image)
+			}
+
 			allowed, message := ws.admitPod(&pod)
 			admissionResponse = &admissionv1.AdmissionResponse{
 				Allowed: allowed,
@@ -99,8 +148,15 @@ func (ws *WebhookServer) Handle(w http.ResponseWriter, r *http.Request) {
 					Message: message,
 				},
 			}
+
+			if allowed {
+				log.Printf("[%s] ALLOWED: Pod '%s/%s' validation successful", requestID, pod.Namespace, pod.Name)
+			} else {
+				log.Printf("[%s] DENIED: Pod '%s/%s': %s", requestID, pod.Namespace, pod.Name, message)
+			}
 		}
 	} else {
+		log.Printf("[%s] Skipping validation for non-Pod kind: %s", requestID, admissionReview.Request.Kind.Kind)
 		admissionResponse = &admissionv1.AdmissionResponse{
 			Allowed: true,
 		}
@@ -118,9 +174,11 @@ func (ws *WebhookServer) Handle(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := json.Marshal(responseAdmissionReview)
 	if err != nil {
+		log.Printf("[%s] ERROR: Could not marshal response: %v", requestID, err)
 		http.Error(w, fmt.Sprintf("Could not marshal response: %v", err), http.StatusInternalServerError)
 		return
 	}
+	log.Printf("[%s] Request processing completed", requestID)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp)
 }
@@ -220,8 +278,8 @@ func main() {
 			log.Printf("Starting server with TLS on port %s", portStr)
 			log.Fatal(server.ListenAndServeTLS(cert, key))
 		} else {
-			log.Printf("Warning: Starting server without TLS on port %s", portStr)
-			log.Fatal(server.ListenAndServe())
+			log.Printf("Error: TLS certificate and key not provided")
+			os.Exit(1)
 		}
 
 		return nil

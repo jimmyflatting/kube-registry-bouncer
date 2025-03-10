@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-allowed-registry
+  namespace: default
+  labels:
+    app: test-allowed-registry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-allowed-registry
+  template:
+    metadata:
+      labels:
+        app: test-allowed-registry
+    spec:
+      containers:
+      - name: nginx
+        image: ghcr.io/linuxserver/nginx:latest
+        ports:
+        - containerPort: 80

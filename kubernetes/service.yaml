@@ -9,4 +9,4 @@ spec:
     app: kube-registry-bouncer-server
   ports:
   - port: 443
-    targetPort: kube-registry-bouncer-api
+    targetPort: krb-api

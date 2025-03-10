@@ -10,7 +10,7 @@ webhooks:
       namespace: kube-registry-bouncer-poc
       path: "/validate-registry"
       port: 443
-    caBundle: ${CA_BUNDLE}  # This will be replaced in the next steps
+    caBundle: ${CA_BUNDLE}
   rules:
   - apiGroups: [""]
     apiVersions: ["v1"]

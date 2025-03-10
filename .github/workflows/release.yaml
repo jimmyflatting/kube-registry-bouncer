@@ -42,16 +42,3 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      # Build docker image and push to registry
-      - name: Build and push Docker images
-        run: |
-          docker buildx create --name mybuilder
-          docker buildx use mybuilder
-          docker buildx inspect --bootstrap
-          docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/jimmyflatting/kube-registry-bouncer/kube-registry-bouncer:latest --push .
-        env:
-          DOCKER_BUILDKIT: 1
-          DOCKER_CLI_EXPERIMENTAL: enabled
-          DOCKER_USERNAME: ${{ github.repository_owner }}
-          DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}

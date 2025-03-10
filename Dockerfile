@@ -1,5 +1,15 @@
-FROM alpine:3.17
-ARG TARGETARCH
-COPY kube-registry-bouncer_linux_${TARGETARCH}*/kube-registry-bouncer /usr/local/bin/
-RUN chmod +x /usr/local/bin/kube-registry-bouncer
-CMD ["/usr/local/bin/kube-registry-bouncer"]
+FROM alpine:3.18
+
+WORKDIR /app
+COPY kube-registry-bouncer /app/
+
+# Create non-root user
+RUN addgroup -g 1000 appuser && \
+    adduser -u 1000 -G appuser -s /bin/sh -D appuser && \
+    chown -R appuser:appuser /app
+
+USER appuser
+
+EXPOSE 1323
+
+ENTRYPOINT ["/app/kube-registry-bouncer"]

@@ -1,43 +1,53 @@
 project_name: kube-registry-bouncer
 
+before:
+  hooks:
+    - go mod tidy
+
 builds:
-- binary: kube-registry-bouncer
-  env: [CGO_ENABLED=0]
-  goos:
-  - linux
-  - windows
-  - darwin
-  goarch:
-  - amd64
-  - arm64
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+    main: main.go
 
 dockers:
-- image_templates: ["ghcr.io/jimmyflatting/kube-registry-bouncer:{{ .Version }}-amd64"]
-  use: buildx
-  dockerfile: Dockerfile
-  build_flag_templates:
-  - --platform=linux/amd64
-  - "--label=org.opencontainers.image.created={{ .Date }}"
-  - "--label=org.opencontainers.image.title={{ .ProjectName }}"
-  - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
-  - "--label=org.opencontainers.image.version={{ .Version }}"
-- image_templates: ["ghcr.io/jimmyflatting/kube-registry-bouncer:{{ .Version }}-arm64v8"]
-  use: buildx
-  dockerfile: Dockerfile
-  goarch: arm64
-  build_flag_templates:
-  - --platform=linux/arm64/v8
-  - "--label=org.opencontainers.image.created={{ .Date }}"
-  - "--label=org.opencontainers.image.title={{ .ProjectName }}"
-  - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
-  - "--label=org.opencontainers.image.version={{ .Version }}"
+  - image_templates:
+      - 'ghcr.io/jimmyflatting/kube-registry-bouncer:{{ .Version }}'
+      - 'ghcr.io/jimmyflatting/kube-registry-bouncer:latest'
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title=kube-registry-bouncer"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--platform=linux/amd64"
 
-docker_manifests:
-- name_template: ghcr.io/jimmyflatting/kube-registry-bouncer:{{ .Version }}
-  image_templates:
-  - ghcr.io/jimmyflatting/kube-registry-bouncer:{{ .Version }}-amd64
-  - ghcr.io/jimmyflatting/kube-registry-bouncer:{{ .Version }}-arm64v8
-- name_template: ghcr.io/jimmyflatting/kube-registry-bouncer:latest
-  image_templates:
-  - ghcr.io/jimmyflatting/kube-registry-bouncer:{{ .Version }}-amd64
-  - ghcr.io/jimmyflatting/kube-registry-bouncer:{{ .Version }}-arm64v8
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
